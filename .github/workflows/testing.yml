@@ -1,0 +1,39 @@
+name: buildDocker
+
+on: push
+
+env:
+  MONGO_URI: "mongodb+srv://supercluster.d83jj.mongodb.net/superData"
+  MONGO_USERNAME: ${{vars.MONGO_USERNAME}}
+  MONGO_PASSWORD: ${{secrets.MONGO_PASSWORD}}
+jobs:
+  unit-testing:
+    name: Unit Testing
+    strategy:
+      matrix:
+        nodejs_version: [18, 19, 20]
+        operating_system: [ubuntu-latest]
+
+    runs-on: ${{matrix.operating_system}}
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup NodeJS Version - ${{matrix.nodejs_version}}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.nodejs_version }}
+
+      - name: Install Node Packages
+        run: npm install
+
+      - name: Run tests
+        id: nodejs-unit-testing-step
+        run: npm test
+
+      - name: Upload tests
+        if: steps.nodejs-unit-testing-step.outcome == 'failure' || steps.nodejs-unit-testing-step.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-result
+          path: test-results.xml
